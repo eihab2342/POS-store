@@ -13,6 +13,8 @@ use Filament\Forms\Components\{Select, TextInput, Toggle, Textarea, Grid};
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use App\Models\Supplier;
 
 class ProductVariantGenerateResource extends Resource
@@ -24,6 +26,7 @@ class ProductVariantGenerateResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-table-cells';
     protected static ?string $modelLabel = 'المنتجات';
     protected static ?string $pluralModelLabel = 'المنتجات';
+
 
     public static function form(Form $form): Form
     {
@@ -54,7 +57,12 @@ class ProductVariantGenerateResource extends Resource
 
                         Select::make('supplier_id')
                             ->label('المورد')
-                            ->options(fn() => \App\Models\Supplier::pluck('name', 'id'))
+                            ->options(
+                                fn() =>
+                                Cache::rememberForever('suppliers_options', function () {
+                                    return Supplier::pluck('name', 'id')->toArray();
+                                })
+                            )
                             ->searchable()
                             ->preload()
                             ->required()
@@ -77,7 +85,7 @@ class ProductVariantGenerateResource extends Resource
                                             'opening_balance' => $data['opening_balance'],
                                             'notes' => $data['notes'],
                                         ]);
-
+                                        Cache::forget('suppliers_options');
                                         $set('supplier_id', $supplier->id);
                                     })
                                     ->form([
@@ -271,8 +279,18 @@ class ProductVariantGenerateResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['product'])
-            ->select(['id', 'name', 'sku', 'product_id', 'size', 'color', 'price', 'stock_qty', 'reorder_level']);
+            ->with('supplier:id,name')
+            ->select([
+                'id',
+                'name',
+                'sku',
+                'product_id',
+                'size',
+                'color',
+                'price',
+                'stock_qty',
+                'reorder_level'
+            ]);
     }
     public static function getRelations(): array
     {

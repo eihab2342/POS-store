@@ -15,7 +15,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Get;
 use App\Models\Sale;
 
-class PosInPanel extends Page implements HasForms
+class Sales_Invoice extends Page implements HasForms
 {
 
     use InteractsWithForms;

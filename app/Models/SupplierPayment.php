@@ -11,4 +11,17 @@ class SupplierPayment extends Model
     {
         return $this->belongsTo(Supplier::class);
     }
+
+    // App\Models\SupplierPayment.php
+
+    protected static function booted()
+    {
+        static::saved(function (SupplierPayment $payment) {
+            $payment->supplier?->recalcCurrentBalance();
+        });
+
+        static::deleted(function (SupplierPayment $payment) {
+            $payment->supplier?->recalcCurrentBalance();
+        });
+    }
 }

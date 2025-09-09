@@ -13,19 +13,19 @@ class StatsOverview extends BaseWidget
 {
     public function getStats(): array
     {
-        $productCount = Cache::remember('stats.product_variant_count', now()->addMinutes(10), function () {
+        $productCount = Cache::remember('stats.product_variant_count', now()->addMinutes(30), function () {
             return ProductVariant::count();
         });
         
-        $salesCount = Cache::remember('stats.sales_count', now()->addMinutes(10), function () {
+        $salesCount = Cache::remember('stats.sales_count', now()->addMinutes(30), function () {
             return Sale::count();
         });
 
-        $supplierCount = Cache::remember('stats.supplier_count', now()->addMinutes(10), function () {
+        $supplierCount = Cache::remember('stats.supplier_count', now()->addMinutes(30), function () {
             return Supplier::count();
         });
 
-        $lowStockCount = Cache::remember('stats.low_stock_count', now()->addMinutes(10), function () {
+        $lowStockCount = Cache::remember('stats.low_stock_count', now()->addMinutes(30), function () {
             return ProductVariant::whereColumn('stock_qty', '<', 'reorder_level')->count();
         });
 

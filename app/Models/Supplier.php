@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use GeneaLabs\LaravelModelCaching\Traits\Cachable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 class Supplier extends Model
 {
-    use SoftDeletes, HasFactory;
+    use SoftDeletes, HasFactory, Cachable;
 
     /**
      * الأعمدة اللي ينفع نعمل لها mass assignment
@@ -39,10 +42,45 @@ class Supplier extends Model
     ];
 
 
-    public function products(){
+    public function products()
+    {
         return $this->hasMany(Product::class);
     }
 
-    public function purchases(){ return $this->hasMany(Purchase::class); }
-    public function payments(){ return $this->hasMany(SupplierPayment::class); }
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
+    }
+    public function payments()
+    {
+        return $this->hasMany(SupplierPayment::class);
+    }
+    protected static function booted()
+    {
+        static::saved(fn() => Cache::forget('suppliers_options'));
+        static::deleted(fn() => Cache::forget('suppliers_options'));
+    }
+
+    // App\Models\Supplier.php
+
+    public function purchaseInvoices()
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
+    public function recalcCurrentBalance(): void
+    {
+        $purchases = $this->purchaseInvoices()->when(
+            Schema::hasColumn('purchase_invoices', 'status'),
+            fn($q) => $q->where('status', 'posted')
+        )->sum('total');
+
+        $payments  = $this->payments()->sum('amount');
+        $returns   = method_exists($this, 'purchaseReturns')
+            ? $this->purchaseReturns()->sum('total') : 0;
+
+        $this->updateQuietly([
+            'current_balance' => ($this->opening_balance + $purchases - $payments - $returns),
+        ]);
+    }
 }

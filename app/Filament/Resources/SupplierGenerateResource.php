@@ -12,6 +12,7 @@ use Filament\Forms\Components\{TextInput, Toggle, Grid, Section, Textarea};
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
+use Illuminate\Support\Facades\Cache;
 
 class SupplierGenerateResource extends Resource
 {
@@ -119,15 +120,32 @@ class SupplierGenerateResource extends Resource
                 TextColumn::make('company_name')->label('الشركة')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('phone')->label('الهاتف')->copyable(),
                 TextColumn::make('email')->label('البريد')->icon('heroicon-m-envelope')->toggleable(),
-                TextColumn::make('current_balance')->label('الرصيد')
+                TextColumn::make('current_balance')
+                    ->label('الرصيد')
                     ->money('EGP', true)
+                    ->badge()
+                    ->color(fn($state) => $state > 0 ? 'danger' : ($state < 0 ? 'success' : 'gray')) // عليك / لك
                     ->sortable(),
                 IconColumn::make('is_active')->label('نشِط')->boolean(),
                 TextColumn::make('created_at')->label('أُنشئ')->dateTime()->since(),
             ])
             ->filters([
                 TernaryFilter::make('is_active')->label('نشِط'),
-                // TrashedFilter::make(),
+                Tables\Filters\SelectFilter::make('balance_state')
+                    ->label('حالة الرصيد')
+                    ->options([
+                        'positive' => 'رصيد مستحق للمورد (عليك)',
+                        'zero'     => 'رصيد صفر',
+                        'negative' => 'رصيد لك عند المورد',
+                    ])
+                    ->query(function ($query, $data) {
+                        return match ($data['value'] ?? null) {
+                            'positive' => $query->where('current_balance', '>', 0),
+                            'zero'     => $query->where('current_balance', '=', 0),
+                            'negative' => $query->where('current_balance', '<', 0),
+                            default    => $query,
+                        };
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
