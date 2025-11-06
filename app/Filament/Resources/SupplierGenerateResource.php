@@ -12,7 +12,8 @@ use Filament\Forms\Components\{TextInput, Toggle, Grid, Section, Textarea};
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Auth;
 
 class SupplierGenerateResource extends Resource
 {
@@ -22,6 +23,38 @@ class SupplierGenerateResource extends Resource
     protected static ?string $modelLabel = 'الموردين';
 
     protected static ?string $pluralModelLabel = 'الموردين';
+
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()?->role === 'manager';
+    }
+
+    public static function canAccess(): bool
+    {
+        return in_array(Auth::user()?->role, ['manager']);
+    }
+
+    public static function canViewAny(): bool
+    {
+        return in_array(Auth::user()?->role, ['manager']);
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()?->role === 'manager';
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::user()?->role === 'manager';
+    }
+
+    public static function canDelete($record): bool
+    {
+        return Auth::user()?->role === 'manager';
+    }
+
 
     public static function form(Form $form): Form
     {

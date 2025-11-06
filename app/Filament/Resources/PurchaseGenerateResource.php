@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use App\Models\ProductVariant;
 use Filament\Forms\Set;
+use Illuminate\Support\Facades\Auth;
 
 class PurchaseGenerateResource extends Resource
 {
@@ -21,7 +22,21 @@ class PurchaseGenerateResource extends Resource
 
     protected static ?string $modelLabel = 'فاتورة شراء';
 
-    protected static ?string $pluralModelLabel = 'فواتير شراء'; 
+    protected static ?string $pluralModelLabel = 'فواتير شراء';
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()?->role === 'manager';
+    }
+
+    public static function canAccess(): bool
+    {
+        return in_array(Auth::user()?->role, ['manager']);
+    }
+
+    public static function canViewAny(): bool
+    {
+        return in_array(Auth::user()?->role, ['manager']);
+    }
 
     public static function form(Form $form): Form
     {

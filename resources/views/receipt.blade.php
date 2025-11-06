@@ -4,70 +4,100 @@
 <head>
     <meta charset="UTF-8">
     <title>فاتورة بيع</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* خلي الجسم عادي */
+        body {
+            margin: 0;
+            background: #fff;
+            font-family: sans-serif;
+            font-size: 12px;
+        }
+
+        /* ده عرض الطابعة بس، مفيش ارتفاع */
+        .receipt {
+            width: 78mm;
+            /* أو 80mm حسب الطابعة */
+            margin: 0 auto;
+            padding: 8px 6px;
+            box-sizing: border-box;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 2px 0;
+        }
+
+        tr.item-row td {
+            border-bottom: 1px dashed #ddd;
+        }
+
+        /* الجزء المهم بقا 👇 */
+        @media print {
+            @page {
+                /* ما تقولش للطابعة طولك كذا */
+                size: auto;
+                margin: 2mm;
+            }
+
+            body {
+                margin: 0;
+            }
+
+            .receipt {
+                /* مفيش height هنا */
+                width: 78mm;
+            }
+        }
+    </style>
 </head>
 
-<body class="bg-white text-black py-4">
-    <div class="max-w-sm mx-auto bg-white border border-gray-300 rounded-lg p-4 text-xs font-mono">
+<body>
+    <div class="receipt">
+        <h3 style="text-align:center; margin:0 0 4px;">YAZAN</h3>
+        <p style="margin:0 0 4px; text-align:center;">فاتورة بيع</p>
+        <p style="margin:0 0 4px;">
+            رقم الفاتورة: <strong>{{ $sale->id }}</strong><br>
+            التاريخ: <strong>{{ $sale->created_at->format('Y-m-d H:i') }}</strong>
+        </p>
 
-        <!-- الهيدر -->
-        <div class="text-center border-b border-gray-400 pb-2 mb-2">
-            <h1 class="text-lg font-bold">YAZAN</h1>
-            <h2 class="text-lg font-bold">فاتورة بيع</h2>
-            <p class="mt-1">
-                رقم الفاتورة: <span class="font-semibold">{{ $sale->id }}</span><br>
-                التاريخ: <span class="font-semibold">{{ $sale->date }}</span>
-            </p>
-        </div>
-
-        <!-- جدول المنتجات -->
-        <table class="w-full border-collapse text-xs">
+        <table>
             <thead>
-                <tr class="border-b border-gray-400">
-                    <th class="p-1 text-right">الصنف</th>
-                    <th class="p-1 text-center">السعر</th>
-                    <th class="p-1 text-center">الكمية</th>
-                    <th class="p-1 text-center">الإجمالي</th>
+                <tr>
+                    <th style="text-align:right;">الصنف</th>
+                    <th style="text-align:center;">سعر</th>
+                    <th style="text-align:center;">كمية</th>
+                    <th style="text-align:center;">الإجمالي</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($sale->items as $item)
-                <tr class="border-b border-dashed border-gray-300">
-                    <td class="p-1 text-right">
-                        {{ $item->variant->product->name }}
-                        @if($item->variant->size) - {{ $item->variant->size }}@endif
-                        @if($item->variant->color) {{ $item->variant->color }}@endif
-                    </td>
-                    <td class="p-1 text-center">{{ number_format($item->price, 2) }}</td>
-                    <td class="p-1 text-center">{{ $item->qty }}</td>
-                    <td class="p-1 text-center font-semibold">{{ number_format($item->price * $item->qty, 2) }}</td>
-                </tr>
+                    <tr class="item-row">
+                        <td style="text-align:right;">
+                            {{ $item->variant->product->name ?? $item->name ?? 'صنف' }}
+                        </td>
+                        <td style="text-align:center;">{{ number_format($item->price, 2) }}</td>
+                        <td style="text-align:center;">{{ $item->qty }}</td>
+                        <td style="text-align:center;">{{ number_format($item->price * $item->qty, 2) }}</td>
+                    </tr>
                 @endforeach
             </tbody>
         </table>
 
-        <div class="text-right mt-2 border-t border-gray-400 pt-2">
-            <p class="text-sm font-bold">
-                هاتف العميل: {{ $sale->customer->phone ?? '---' }}
-            </p>
-        </div>
-
-        <!-- الإجمالي -->
-        <div class="text-right mt-2 border-t border-gray-400 pt-2">
-            <p class="text-sm font-bold">
-                الإجمالي: {{ number_format($sale->total, 2) }} ج.م
-            </p>
-        </div>
-
-        <!-- الفوتر -->
-        <div class="text-center mt-4 border-t border-gray-300 pt-2 text-[10px]">
-            <p>شكراً لتسوقكم من متجرنا</p>
-            <p>📞 00212594901 | 📍 المنصورة - مصر</p>
-        </div>
+        <p style="text-align:right; margin:6px 0 0;">
+            الإجمالي: <strong>{{ number_format($sale->total, 2) }}</strong>
+        </p>
+        <p style="text-align:center; margin:6px 0 0; font-size:10px;">شكراً لتعاملكم</p>
     </div>
 
     <script>
-    window.print();
+        window.addEventListener('load', function () {
+            window.print();
+        });
     </script>
 </body>
 

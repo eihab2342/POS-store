@@ -16,4 +16,12 @@ class EditProductVariantGenerate extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    protected function afterSave(): void
+    {
+        if ($this->record->wasChanged('stock_qty')) {
+            \App\Services\BarcodeService::syncToStock($this->record);
+            \App\Services\AutoBarcodeService::generateAndPrint($this->record);
+        }
+    }
 }

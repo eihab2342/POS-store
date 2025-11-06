@@ -6,6 +6,7 @@ use App\Filament\Resources\ProductVariantGenerateResource\Pages;
 use App\Models\ProductVariant;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
+use Filament\Tables\Actions\Action as act;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -16,6 +17,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use App\Models\Supplier;
+use Illuminate\Support\Facades\Auth;
 
 class ProductVariantGenerateResource extends Resource
 {
@@ -27,7 +29,6 @@ class ProductVariantGenerateResource extends Resource
     protected static ?string $modelLabel = 'المنتجات';
     protected static ?string $pluralModelLabel = 'المنتجات';
 
-
     public static function form(Form $form): Form
     {
         return $form
@@ -35,43 +36,28 @@ class ProductVariantGenerateResource extends Resource
                 Forms\Components\Section::make('بيانات الصنف')
                     ->description('أدخل تفاصيل الصنف (المقاس، اللون، السعر...)')
                     ->schema([
-
-                        Forms\Components\TextInput::make('sku')
-                            ->label('الكود (SKU)')
-                            ->required()
+                        TextInput::make('sku')
+                            ->label('SKU')
+                            ->disabled()
+                            ->dehydrated(true)
                             ->unique(ignoreRecord: true)
-                            ->prefixIcon('heroicon-o-hashtag')
-                            ->placeholder('مثال: TSH-RED-M'),
+                            ->prefixIcon('heroicon-o-hashtag'),
 
                         Forms\Components\TextInput::make('name')
                             ->label('اسم المنتج')
                             ->placeholder('مثال: تيشرت قطن من اديداس احمر'),
 
-                        // Forms\Components\Select::make('product_id')
-                        //     ->label('الفئة')
-                        //     ->relationship('product', 'name')
-                        //     ->searchable()
-                        //     ->preload()
-                        //     ->placeholder('اختر الفئه'),
-
-
                         Select::make('supplier_id')
                             ->label('المورد')
-                            ->options(
-                                fn() =>
-                                Cache::rememberForever('suppliers_options', function () {
-                                    return Supplier::pluck('name', 'id')->toArray();
-                                })
-                            )
-                            ->searchable()
-                            ->preload()
+                            ->relationship('supplier', 'name')->preload()
                             ->required()
                             ->suffixAction(
                                 Action::make('createSupplier')
+                                    ->visible(fn(Forms\Get $get) => Auth::user()?->role === 'manager')
                                     ->icon('heroicon-o-plus')
                                     ->tooltip('إضافة مورد جديد')
                                     ->action(function (array $data, Forms\Set $set) {
-                                        $supplier = \App\Models\Supplier::create([
+                                        $supplier = Supplier::create([
                                             'code' => $data['code'],
                                             'name' => $data['name'],
                                             'is_active' => $data['is_active'],
@@ -85,7 +71,8 @@ class ProductVariantGenerateResource extends Resource
                                             'opening_balance' => $data['opening_balance'],
                                             'notes' => $data['notes'],
                                         ]);
-                                        Cache::forget('suppliers_options');
+                                        // امسح كاش خيارات الموردين بالمفتاح الصحيح
+                                        Cache::forget('suppliers:options');
                                         $set('supplier_id', $supplier->id);
                                     })
                                     ->form([
@@ -117,7 +104,7 @@ class ProductVariantGenerateResource extends Resource
                                             TextInput::make('email')
                                                 ->label('البريد الإلكتروني')
                                                 ->email()
-                                                ->unique(table: \App\Models\Supplier::class, column: 'tax_number', ignoreRecord: true)
+                                                ->unique(table: \App\Models\Supplier::class, column: 'email', ignoreRecord: true)
                                                 ->nullable()
                                                 ->columnSpan(4),
 
@@ -131,9 +118,8 @@ class ProductVariantGenerateResource extends Resource
                                         Grid::make(12)->schema([
                                             TextInput::make('tax_number')
                                                 ->label('الرقم الضريبي')
-                                                ->unique(ignoreRecord: true)
-                                                ->nullable()
                                                 ->unique(table: \App\Models\Supplier::class, column: 'tax_number', ignoreRecord: true)
+                                                ->nullable()
                                                 ->columnSpan(4),
 
                                             TextInput::make('country')
@@ -214,15 +200,17 @@ class ProductVariantGenerateResource extends Resource
                                 ->numeric()
                                 ->default(0)
                                 ->hint('سيظهر تنبيه عند انخفاض الكمية لهذا الحد'),
-                        ])
+                        ]),
                     ])
                     ->columns(2)
                     ->collapsible(),
             ]);
     }
+
     public static function table(Tables\Table $table): Tables\Table
     {
         return $table
+            ->deferLoading()
             ->columns([
                 Tables\Columns\TextColumn::make('sku')
                     ->label('SKU')
@@ -247,6 +235,7 @@ class ProductVariantGenerateResource extends Resource
                 Tables\Columns\TextColumn::make('price')
                     ->label('السعر')
                     ->money('EGP'),
+
                 Tables\Columns\TextColumn::make('stock_qty')
                     ->label('المخزون')
                     ->sortable()
@@ -256,28 +245,69 @@ class ProductVariantGenerateResource extends Resource
             ->filters([
                 Filter::make('low_stock')
                     ->label('مخزون منخفض')
-                    ->query(
-                        fn(Builder $query): Builder =>
-                        $query->whereColumn('stock_qty', '<', 'reorder_level')
-                    ),
+                    ->query(fn(Builder $q) => $q->where('is_low_stock', true)),
 
                 SelectFilter::make('supplier_id')
                     ->label('المورد')
-                    ->options(Supplier::pluck('name', 'id')->toArray())
+                    ->options(fn() => Cache::remember(
+                        'suppliers:options',
+                        3600,
+                        fn() => Supplier::orderBy('name')->pluck('name', 'id')->toArray()
+                    )),
             ])
             ->actions([
+                Tables\Actions\Action::make('labels')
+                    ->label('طباعة استيكرات')
+                    ->icon('heroicon-o-printer')
+                    ->form([
+                        Forms\Components\TextInput::make('qty')
+                            ->numeric()
+                            ->default(100)
+                            ->minValue(1)
+                            ->maxValue(2000)
+                            ->required(),
+                        Forms\Components\Select::make('type')
+                            ->options([
+                                'code128' => 'Code128',
+                                'qr' => 'QR',
+                                'ean13' => 'EAN-13',
+                            ])
+                            ->default('code128'),
+                    ])
+                    ->url(fn($record, $data) => route('barcodes.print', [
+                        'variant' => $record->id,
+                        'qty' => $data['qty'] ?? 100,
+                        'type' => $data['type'] ?? 'code128',
+                    ]))
+                    ->openUrlInNewTab(),
+
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+
+                Tables\Actions\EditAction::make()
+                    ->visible(fn() => Auth::user()?->role === 'manager')
+                    ->after(fn() => Cache::forget('suppliers:options')),
+
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn() => Auth::user()?->role === 'manager')
+                    ->after(fn() => Cache::forget('suppliers:options')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->after(fn() => Cache::forget('suppliers:options')),
                 ]),
-            ]);
+            ])
+            ->persistFiltersInSession()
+            ->persistSearchInSession()
+            ->persistColumnSearchesInSession();
     }
+
     public static function getEloquentQuery(): Builder
     {
+        Log::info('🔍 Building Product Variants Query', [
+            'time' => now()->format('Y-m-d H:i:s'),
+        ]);
+
         return parent::getEloquentQuery()
             ->with('supplier:id,name')
             ->select([
@@ -285,19 +315,23 @@ class ProductVariantGenerateResource extends Resource
                 'name',
                 'sku',
                 'product_id',
+                'supplier_id',
                 'size',
                 'color',
                 'price',
                 'stock_qty',
-                'reorder_level'
-            ]);
+                'reorder_level',
+            ])
+            ->orderByDesc('id');
     }
+
     public static function getRelations(): array
     {
         return [
             //
         ];
     }
+
     public static function getPages(): array
     {
         return [

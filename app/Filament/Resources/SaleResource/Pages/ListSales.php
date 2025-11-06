@@ -15,7 +15,7 @@ class ListSales extends ListRecords
     {
         return [
             Actions\CreateAction::make()
-                ->url(route('filament.admin.pages.pos-in-panel'))
+                ->url(route('filament.admin.pages.sales-invoice'))
                 ->label('إنشاء فاتورة') 
                 ->icon('heroicon-o-plus')
                 ->color('success'),

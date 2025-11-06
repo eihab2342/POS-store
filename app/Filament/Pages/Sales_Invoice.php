@@ -22,7 +22,8 @@ class Sales_Invoice extends Page implements HasForms
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
     protected static ?string $navigationGroup = 'عمليات الكاشير';
     protected static ?string $title = 'استخراج فاتورة';
-    protected static string $view = 'filament.pages.pos-in-panel';
+    protected static string $view = 'filament.pages.sales_form';
+
 
     public ?string $sku = '';
     public array $cart = [];
@@ -49,18 +50,39 @@ class Sales_Invoice extends Page implements HasForms
     public function getFormSchema(): array
     {
         return [
+            // Forms\Components\TextInput::make('sku')
+            //     ->label('SKU')
+            //     ->extraAttributes(['wire:keydown.enter' => 'addBySku'])
+            //     ->live(debounce: 300) // يضمن مزامنة أسرع (اختياري)
+            //     ->suffixAction(
+            //         Forms\Components\Actions\Action::make('add')
+            //             ->label('إضافة')
+            //             ->icon('heroicon-m-plus')
+            //             ->disabled(fn(Get $get) => blank($get('sku'))) // عطّل لو فاضي
+            //             ->action(function (Get $get) {
+            //                 $this->sku = (string) $get('sku');
+            //             })
+            //     ),
+            
             Forms\Components\TextInput::make('sku')
                 ->label('SKU')
-                ->extraAttributes(['wire:keydown.enter' => 'addBySku'])
-                ->live(debounce: 300) // يضمن مزامنة أسرع (اختياري)
+                ->autofocus()
+                ->reactive() // أو ->live(debounce: 0)
+                ->extraAttributes([
+                    'x-ref' => 'sku',
+                    // رجّع الفوكس عند التحميل وأي فقد فوكس
+                    'x-init' => '$nextTick(()=> $refs.sku.focus())',
+                    'x-on:blur' => '$nextTick(()=> $refs.sku.focus())',
+                    // لو السكانر أرسل Enter: نفّذ الإجراء فورًا
+                    'x-on:keydown.enter.stop.prevent' => '$wire.addBySku()',
+                ])
+                // (اختياري) لو حابب تكمّل بزر إضافة
                 ->suffixAction(
                     Forms\Components\Actions\Action::make('add')
                         ->label('إضافة')
                         ->icon('heroicon-m-plus')
-                        ->disabled(fn(Get $get) => blank($get('sku'))) // عطّل لو فاضي
-                        ->action(function (Get $get) {
-                            $this->sku = (string) $get('sku');
-                        })
+                        ->disabled(fn(Get $get) => blank($get('sku')))
+                        ->action(fn(Get $get) => $this->sku = (string) $get('sku'))
                 ),
             Forms\Components\TextInput::make('phone')
                 ->label('هاتف العميل')
@@ -111,10 +133,11 @@ class Sales_Invoice extends Page implements HasForms
 
     public function addBySku(ProductVariantRepository $variants): void
     {
-        if (! $this->sku) return;
+        if (!$this->sku)
+            return;
 
         $dto = $variants->findCartItemBySku($this->sku);
-        if (! $dto) {
+        if (!$dto) {
             Notification::make()->danger()->title('الصنف غير موجود')->send();
             return;
         }
@@ -124,19 +147,19 @@ class Sales_Invoice extends Page implements HasForms
             $this->cart[$idx]['qty']++;
         } else {
             $this->cart[] = [
-                'variant_id' => (int)    $dto->variant_id,
-                'sku'        => (string) $dto->sku,
-                'name'       => (string) $dto->name,
-                'price'      => (float)  $dto->price,
-                'qty'        => 1,
-                'line_total' => (float)  $dto->price,
+                'variant_id' => (int) $dto->variant_id,
+                'sku' => (string) $dto->sku,
+                'name' => (string) $dto->name,
+                'price' => (float) $dto->price,
+                'qty' => 1,
+                'line_total' => (float) $dto->price,
             ];
         }
 
         $this->sku = '';
         $this->refreshCart();
         $this->form->fill([
-            'sku'  => $this->sku,
+            'sku' => $this->sku,
             'cart' => $this->cart,
         ]);
     }
@@ -151,11 +174,11 @@ class Sales_Invoice extends Page implements HasForms
         try {
             $items = array_map(
                 fn($i) => new CartItem(
-                    variant_id: (int)   $i['variant_id'],
-                    name: (string)$i['name'],
+                    variant_id: (int) $i['variant_id'],
+                    name: (string) $i['name'],
                     price: (float) $i['price'],
-                    sku: isset($i['sku']) ? (string)$i['sku'] : null,
-                    qty: (int)   $i['qty']
+                    sku: isset($i['sku']) ? (string) $i['sku'] : null,
+                    qty: (int) $i['qty']
                 ),
                 $this->cart
             );
@@ -192,7 +215,7 @@ class Sales_Invoice extends Page implements HasForms
             return $i;
         })->all();
         $this->form->fill([
-            'sku'  => $this->sku,
+            'sku' => $this->sku,
             'cart' => $this->cart,
         ]);
     }

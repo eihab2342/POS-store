@@ -16,6 +16,9 @@ class Supplier extends Model
     /**
      * الأعمدة اللي ينفع نعمل لها mass assignment
      */
+
+
+    //supplier model
     protected $fillable = [
         'code',
         'name',
@@ -57,8 +60,8 @@ class Supplier extends Model
     }
     protected static function booted()
     {
-        static::saved(fn() => Cache::forget('suppliers_options'));
-        static::deleted(fn() => Cache::forget('suppliers_options'));
+        static::saved(fn() => Cache::tags('suppliers')->flush());
+        static::deleted(fn() => Cache::tags('suppliers')->flush());
     }
 
     // App\Models\Supplier.php
@@ -75,8 +78,8 @@ class Supplier extends Model
             fn($q) => $q->where('status', 'posted')
         )->sum('total');
 
-        $payments  = $this->payments()->sum('amount');
-        $returns   = method_exists($this, 'purchaseReturns')
+        $payments = $this->payments()->sum('amount');
+        $returns = method_exists($this, 'purchaseReturns')
             ? $this->purchaseReturns()->sum('total') : 0;
 
         $this->updateQuietly([
