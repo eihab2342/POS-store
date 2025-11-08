@@ -23,8 +23,6 @@
 </x-filament::page> --}}
 
 
-
-{{-- resources/views/filament/pages/pos-sell.blade.php --}}
 <x-filament::page>
     <div class="space-y-6" dir="rtl">
         {{ $this->form }}

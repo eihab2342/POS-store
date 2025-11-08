@@ -25,157 +25,157 @@ class SaleResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
     protected static ?string $pluralModelLabel = 'المبيعات';
 
-    public static function form(Form $form): Form
-    {
-        return $form->schema([
-            DateTimePicker::make('date')
-                ->label('تاريخ البيع')
-                ->required(),
+    // public static function form(Form $form): Form
+    // {
+    //     return $form->schema([
+    //         DateTimePicker::make('date')
+    //             ->label('تاريخ البيع')
+    //             ->required(),
 
-            Select::make('cashier_id')
-                ->label('الكاشير')
-                ->relationship('cashier', 'name')
-                ->required(),
+    //         Select::make('cashier_id')
+    //             ->label('الكاشير')
+    //             ->relationship('cashier', 'name')
+    //             ->required(),
 
-            Select::make('customer_id')
-                ->label('العميل')
-                ->relationship('customer', 'name')
-                ->searchable()
-                ->nullable(),
+    //         Select::make('customer_id')
+    //             ->label('العميل')
+    //             ->relationship('customer', 'name')
+    //             ->searchable()
+    //             ->nullable(),
 
-            Select::make('payment_method')
-                ->label('طريقة الدفع')
-                ->options([
-                    'cash' => 'نقدًا',
-                    'card' => 'بطاقة',
-                    'credit' => 'ائتمان',
-                ])
-                ->default('cash')
-                ->required(),
+    //         Select::make('payment_method')
+    //             ->label('طريقة الدفع')
+    //             ->options([
+    //                 'cash' => 'نقدًا',
+    //                 'card' => 'بطاقة',
+    //                 'credit' => 'ائتمان',
+    //             ])
+    //             ->default('cash')
+    //             ->required(),
 
-            Repeater::make('items')
-                ->label('المنتجات')
-                ->relationship()
-                ->live() // علشان نحدّث الإجماليات لحظيًا
-                ->afterStateUpdated(function (Set $set, Get $get) {
-                    $sum = collect($get('items') ?? [])->sum(fn($i) => (float) ($i['total'] ?? 0));
-                    $set('subtotal', $sum);
-                    $total = $sum - (float) ($get('discount') ?? 0) + (float) ($get('tax') ?? 0);
-                    $set('total', $total);
-                })
-                ->schema([
-                    // حقل المسح بالباركود / SKU
-                    TextInput::make('barcode')
-                        ->label('الباركود / SKU')
-                        ->placeholder('امسح الباركود هنا ثم Enter')
-                        ->live(debounce: 150)
-                        ->extraAttributes(['x-on:keydown.enter.prevent' => ''])
-                        ->afterStateUpdated(function (Set $set, Get $get, ?string $state) {
-                            if (!$state)
-                                return;
+    //         Repeater::make('items')
+    //             ->label('المنتجات')
+    //             ->relationship()
+    //             ->live() // علشان نحدّث الإجماليات لحظيًا
+    //             ->afterStateUpdated(function (Set $set, Get $get) {
+    //                 $sum = collect($get('items') ?? [])->sum(fn($i) => (float) ($i['total'] ?? 0));
+    //                 $set('subtotal', $sum);
+    //                 $total = $sum - (float) ($get('discount') ?? 0) + (float) ($get('tax') ?? 0);
+    //                 $set('total', $total);
+    //             })
+    //             ->schema([
+    //                 // حقل المسح بالباركود / SKU
+    //                 TextInput::make('barcode')
+    //                     ->label('الباركود / SKU')
+    //                     ->placeholder('امسح الباركود هنا ثم Enter')
+    //                     ->live(debounce: 150)
+    //                     ->extraAttributes(['x-on:keydown.enter.prevent' => ''])
+    //                     ->afterStateUpdated(function (Set $set, Get $get, ?string $state) {
+    //                         if (!$state)
+    //                             return;
 
-                            $code = preg_replace('/[^A-Za-z0-9\-]/', '', trim($state));
+    //                         $code = preg_replace('/[^A-Za-z0-9\-]/', '', trim($state));
 
-                            $pv = ProductVariant::query()
-                                ->where('sku', $code)
-                                ->orWhere('barcode', $code)
-                                ->orWhereHas('barcodes', fn($q) => $q->where('code', $code))
-                                ->first();
+    //                         $pv = ProductVariant::query()
+    //                             ->where('sku', $code)
+    //                             ->orWhere('barcode', $code)
+    //                             ->orWhereHas('barcodes', fn($q) => $q->where('code', $code))
+    //                             ->first();
 
-                            if ($pv) {
-                                $set('product_variant_id', $pv->id);
-                                $set('price', (float) $pv->price);
-                                $qty = max(1, (int) ($get('quantity') ?? 1));
-                                $set('quantity', $qty);
-                                $set('total', (float) $pv->price * $qty);
-                            }
-                        }),
+    //                         if ($pv) {
+    //                             $set('product_variant_id', $pv->id);
+    //                             $set('price', (float) $pv->price);
+    //                             $qty = max(1, (int) ($get('quantity') ?? 1));
+    //                             $set('quantity', $qty);
+    //                             $set('total', (float) $pv->price * $qty);
+    //                         }
+    //                     }),
 
-                    Select::make('product_variant_id')
-                        ->label('المنتج')
-                        ->relationship('productVariant', 'name')
-                        ->searchable()
-                        ->reactive()
-                        ->afterStateUpdated(function (Set $set, ?int $state) {
-                            $price = optional(ProductVariant::find($state))->price ?? 0;
-                            $set('price', (float) $price);
-                        })
-                        ->required(),
+    //                 Select::make('product_variant_id')
+    //                     ->label('المنتج')
+    //                     ->relationship('productVariant', 'name')
+    //                     ->searchable()
+    //                     ->reactive()
+    //                     ->afterStateUpdated(function (Set $set, ?int $state) {
+    //                         $price = optional(ProductVariant::find($state))->price ?? 0;
+    //                         $set('price', (float) $price);
+    //                     })
+    //                     ->required(),
 
-                    TextInput::make('quantity')
-                        ->label('الكمية')
-                        ->numeric()
-                        ->default(1)
-                        ->live()
-                        ->afterStateUpdated(function (Set $set, Get $get, $state) {
-                            $qty = (int) ($state ?: 1);
-                            $price = (float) ($get('price') ?? 0);
-                            $set('total', $price * $qty);
-                        })
-                        ->required(),
+    //                 TextInput::make('quantity')
+    //                     ->label('الكمية')
+    //                     ->numeric()
+    //                     ->default(1)
+    //                     ->live()
+    //                     ->afterStateUpdated(function (Set $set, Get $get, $state) {
+    //                         $qty = (int) ($state ?: 1);
+    //                         $price = (float) ($get('price') ?? 0);
+    //                         $set('total', $price * $qty);
+    //                     })
+    //                     ->required(),
 
-                    TextInput::make('price')
-                        ->label('سعر الوحدة')
-                        ->numeric()
-                        ->live()
-                        ->afterStateUpdated(function (Set $set, Get $get, $state) {
-                            $price = (float) ($state ?: 0);
-                            $qty = (int) ($get('quantity') ?? 1);
-                            $set('total', $price * $qty);
-                        })
-                        ->required(),
+    //                 TextInput::make('price')
+    //                     ->label('سعر الوحدة')
+    //                     ->numeric()
+    //                     ->live()
+    //                     ->afterStateUpdated(function (Set $set, Get $get, $state) {
+    //                         $price = (float) ($state ?: 0);
+    //                         $qty = (int) ($get('quantity') ?? 1);
+    //                         $set('total', $price * $qty);
+    //                     })
+    //                     ->required(),
 
-                    TextInput::make('total')
-                        ->label('الإجمالي')
-                        ->numeric()
-                        ->disabled()
-                        ->dehydrated()
-                        ->afterStateHydrated(function (Set $set, Get $get) {
-                            $qty = (int) ($get('quantity') ?? 1);
-                            $price = (float) ($get('price') ?? 0);
-                            $set('total', $price * $qty);
-                        }),
-                ])
-                ->createItemButtonLabel('إضافة منتج')
-                ->columns(5),
+    //                 TextInput::make('total')
+    //                     ->label('الإجمالي')
+    //                     ->numeric()
+    //                     ->disabled()
+    //                     ->dehydrated()
+    //                     ->afterStateHydrated(function (Set $set, Get $get) {
+    //                         $qty = (int) ($get('quantity') ?? 1);
+    //                         $price = (float) ($get('price') ?? 0);
+    //                         $set('total', $price * $qty);
+    //                     }),
+    //             ])
+    //             ->createItemButtonLabel('إضافة منتج')
+    //             ->columns(5),
 
-            TextInput::make('subtotal')
-                ->label('الإجمالي قبل الخصم')
-                ->numeric()
-                ->disabled(),
+    //         TextInput::make('subtotal')
+    //             ->label('الإجمالي قبل الخصم')
+    //             ->numeric()
+    //             ->disabled(),
 
-            TextInput::make('discount')
-                ->label('الخصم')
-                ->numeric()
-                ->default(0)
-                ->live()
-                ->afterStateUpdated(function (Set $set, Get $get, $state) {
-                    $sum = collect($get('items') ?? [])->sum(fn($i) => (float) ($i['total'] ?? 0));
-                    $discount = (float) ($state ?? 0);
-                    $tax = (float) ($get('tax') ?? 0);
-                    $set('subtotal', $sum);
-                    $set('total', $sum - $discount + $tax);
-                }),
+    //         TextInput::make('discount')
+    //             ->label('الخصم')
+    //             ->numeric()
+    //             ->default(0)
+    //             ->live()
+    //             ->afterStateUpdated(function (Set $set, Get $get, $state) {
+    //                 $sum = collect($get('items') ?? [])->sum(fn($i) => (float) ($i['total'] ?? 0));
+    //                 $discount = (float) ($state ?? 0);
+    //                 $tax = (float) ($get('tax') ?? 0);
+    //                 $set('subtotal', $sum);
+    //                 $set('total', $sum - $discount + $tax);
+    //             }),
 
-            TextInput::make('tax')
-                ->label('الضريبة')
-                ->numeric()
-                ->default(0)
-                ->live()
-                ->afterStateUpdated(function (Set $set, Get $get, $state) {
-                    $sum = collect($get('items') ?? [])->sum(fn($i) => (float) ($i['total'] ?? 0));
-                    $discount = (float) ($get('discount') ?? 0);
-                    $tax = (float) ($state ?? 0);
-                    $set('subtotal', $sum);
-                    $set('total', $sum - $discount + $tax);
-                }),
+    //         TextInput::make('tax')
+    //             ->label('الضريبة')
+    //             ->numeric()
+    //             ->default(0)
+    //             ->live()
+    //             ->afterStateUpdated(function (Set $set, Get $get, $state) {
+    //                 $sum = collect($get('items') ?? [])->sum(fn($i) => (float) ($i['total'] ?? 0));
+    //                 $discount = (float) ($get('discount') ?? 0);
+    //                 $tax = (float) ($state ?? 0);
+    //                 $set('subtotal', $sum);
+    //                 $set('total', $sum - $discount + $tax);
+    //             }),
 
-            TextInput::make('total')
-                ->label('الإجمالي النهائي')
-                ->numeric()
-                ->disabled(),
-        ]);
-    }
+    //         TextInput::make('total')
+    //             ->label('الإجمالي النهائي')
+    //             ->numeric()
+    //             ->disabled(),
+    //     ]);
+    // }
 
     public static function table(Table $table): Table
     {

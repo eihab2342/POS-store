@@ -47,121 +47,121 @@ class ProductVariantGenerateResource extends Resource
                             ->label('اسم المنتج')
                             ->placeholder('مثال: تيشرت قطن من اديداس احمر'),
 
-                        Select::make('supplier_id')
-                            ->label('المورد')
-                            ->relationship('supplier', 'name')->preload()
-                            ->required()
-                            ->suffixAction(
-                                Action::make('createSupplier')
-                                    ->visible(fn(Forms\Get $get) => Auth::user()?->role === 'manager')
-                                    ->icon('heroicon-o-plus')
-                                    ->tooltip('إضافة مورد جديد')
-                                    ->action(function (array $data, Forms\Set $set) {
-                                        $supplier = Supplier::create([
-                                            'code' => $data['code'],
-                                            'name' => $data['name'],
-                                            'is_active' => $data['is_active'],
-                                            'company_name' => $data['company_name'],
-                                            'email' => $data['email'],
-                                            'phone' => $data['phone'],
-                                            'tax_number' => $data['tax_number'],
-                                            'country' => $data['country'],
-                                            'city' => $data['city'],
-                                            'address' => $data['address'],
-                                            'opening_balance' => $data['opening_balance'],
-                                            'notes' => $data['notes'],
-                                        ]);
-                                        // امسح كاش خيارات الموردين بالمفتاح الصحيح
-                                        Cache::forget('suppliers:options');
-                                        $set('supplier_id', $supplier->id);
-                                    })
-                                    ->form([
-                                        Grid::make(12)->schema([
-                                            TextInput::make('code')
-                                                ->label('كود المورد')
-                                                ->required()
-                                                ->unique(table: \App\Models\Supplier::class, column: 'code', ignoreRecord: true)
-                                                ->maxLength(30)
-                                                ->columnSpan(3),
+                        // Select::make('supplier_id')
+                        //     ->label('المورد')
+                        //     ->relationship('supplier', 'name')->preload()
+                        //     ->required()
+                        //     ->suffixAction(
+                        //         Action::make('createSupplier')
+                        //             ->visible(fn(Forms\Get $get) => Auth::user()?->role === 'manager')
+                        //             ->icon('heroicon-o-plus')
+                        //             ->tooltip('إضافة مورد جديد')
+                        //             ->action(function (array $data, Forms\Set $set) {
+                        //                 $supplier = Supplier::create([
+                        //                     'code' => $data['code'],
+                        //                     'name' => $data['name'],
+                        //                     'is_active' => $data['is_active'],
+                        //                     'company_name' => $data['company_name'],
+                        //                     'email' => $data['email'],
+                        //                     'phone' => $data['phone'],
+                        //                     'tax_number' => $data['tax_number'],
+                        //                     'country' => $data['country'],
+                        //                     'city' => $data['city'],
+                        //                     'address' => $data['address'],
+                        //                     'opening_balance' => $data['opening_balance'],
+                        //                     'notes' => $data['notes'],
+                        //                 ]);
+                        //                 // امسح كاش خيارات الموردين بالمفتاح الصحيح
+                        //                 Cache::forget('suppliers:options');
+                        //                 $set('supplier_id', $supplier->id);
+                        //             })
+                        //             ->form([
+                        //                 Grid::make(12)->schema([
+                        //                     TextInput::make('code')
+                        //                         ->label('كود المورد')
+                        //                         ->required()
+                        //                         ->unique(table: \App\Models\Supplier::class, column: 'code', ignoreRecord: true)
+                        //                         ->maxLength(30)
+                        //                         ->columnSpan(3),
 
-                                            TextInput::make('name')
-                                                ->label('الاسم')
-                                                ->required()
-                                                ->maxLength(150)
-                                                ->columnSpan(6),
+                        //                     TextInput::make('name')
+                        //                         ->label('الاسم')
+                        //                         ->required()
+                        //                         ->maxLength(150)
+                        //                         ->columnSpan(6),
 
-                                            Toggle::make('is_active')
-                                                ->label('نشِط؟')
-                                                ->default(true)
-                                                ->columnSpan(3),
-                                        ]),
+                        //                     Toggle::make('is_active')
+                        //                         ->label('نشِط؟')
+                        //                         ->default(true)
+                        //                         ->columnSpan(3),
+                        //                 ]),
 
-                                        Grid::make(12)->schema([
-                                            TextInput::make('company_name')
-                                                ->label('الشركة')
-                                                ->columnSpan(4),
+                        //                 Grid::make(12)->schema([
+                        //                     TextInput::make('company_name')
+                        //                         ->label('الشركة')
+                        //                         ->columnSpan(4),
 
-                                            TextInput::make('email')
-                                                ->label('البريد الإلكتروني')
-                                                ->email()
-                                                ->unique(table: \App\Models\Supplier::class, column: 'email', ignoreRecord: true)
-                                                ->nullable()
-                                                ->columnSpan(4),
+                        //                     TextInput::make('email')
+                        //                         ->label('البريد الإلكتروني')
+                        //                         ->email()
+                        //                         ->unique(table: \App\Models\Supplier::class, column: 'email', ignoreRecord: true)
+                        //                         ->nullable()
+                        //                         ->columnSpan(4),
 
-                                            TextInput::make('phone')
-                                                ->label('الهاتف')
-                                                ->tel()
-                                                ->regex('/^[0-9+\-\s()]{6,20}$/')
-                                                ->columnSpan(4),
-                                        ]),
+                        //                     TextInput::make('phone')
+                        //                         ->label('الهاتف')
+                        //                         ->tel()
+                        //                         ->regex('/^[0-9+\-\s()]{6,20}$/')
+                        //                         ->columnSpan(4),
+                        //                 ]),
 
-                                        Grid::make(12)->schema([
-                                            TextInput::make('tax_number')
-                                                ->label('الرقم الضريبي')
-                                                ->unique(table: \App\Models\Supplier::class, column: 'tax_number', ignoreRecord: true)
-                                                ->nullable()
-                                                ->columnSpan(4),
+                        //                 Grid::make(12)->schema([
+                        //                     TextInput::make('tax_number')
+                        //                         ->label('الرقم الضريبي')
+                        //                         ->unique(table: \App\Models\Supplier::class, column: 'tax_number', ignoreRecord: true)
+                        //                         ->nullable()
+                        //                         ->columnSpan(4),
 
-                                            TextInput::make('country')
-                                                ->label('الدولة')
-                                                ->columnSpan(4),
+                        //                     TextInput::make('country')
+                        //                         ->label('الدولة')
+                        //                         ->columnSpan(4),
 
-                                            TextInput::make('city')
-                                                ->label('المدينة')
-                                                ->columnSpan(4),
-                                        ]),
+                        //                     TextInput::make('city')
+                        //                         ->label('المدينة')
+                        //                         ->columnSpan(4),
+                        //                 ]),
 
-                                        TextInput::make('address')
-                                            ->label('العنوان')
-                                            ->maxLength(255),
+                        //                 TextInput::make('address')
+                        //                     ->label('العنوان')
+                        //                     ->maxLength(255),
 
-                                        Grid::make(12)->schema([
-                                            TextInput::make('opening_balance')
-                                                ->label('رصيد افتتاحي')
-                                                ->numeric()
-                                                ->default(0)
-                                                ->minValue(0)
-                                                ->columnSpan(6)
-                                                ->helperText('يستخدم لمرة واحدة، للتأسيس'),
+                        //                 Grid::make(12)->schema([
+                        //                     TextInput::make('opening_balance')
+                        //                         ->label('رصيد افتتاحي')
+                        //                         ->numeric()
+                        //                         ->default(0)
+                        //                         ->minValue(0)
+                        //                         ->columnSpan(6)
+                        //                         ->helperText('يستخدم لمرة واحدة، للتأسيس'),
 
-                                            TextInput::make('current_balance')
-                                                ->label('الرصيد الحالي')
-                                                ->numeric()
-                                                ->default(0)
-                                                ->minValue(0)
-                                                ->dehydrated(false)
-                                                ->disabled()
-                                                ->columnSpan(6)
-                                                ->helperText('يُحدَّث آليًا من المشتريات والمدفوعات'),
-                                        ]),
+                        //                     TextInput::make('current_balance')
+                        //                         ->label('الرصيد الحالي')
+                        //                         ->numeric()
+                        //                         ->default(0)
+                        //                         ->minValue(0)
+                        //                         ->dehydrated(false)
+                        //                         ->disabled()
+                        //                         ->columnSpan(6)
+                        //                         ->helperText('يُحدَّث آليًا من المشتريات والمدفوعات'),
+                        //                 ]),
 
-                                        Textarea::make('notes')
-                                            ->label('ملاحظات')
-                                            ->rows(3),
-                                    ])
-                                    ->modalHeading('إضافة مورد جديد')
-                                    ->modalSubmitActionLabel('حفظ')
-                            ),
+                        //                 Textarea::make('notes')
+                        //                     ->label('ملاحظات')
+                        //                     ->rows(3),
+                        //             ])
+                        //             ->modalHeading('إضافة مورد جديد')
+                        //             ->modalSubmitActionLabel('حفظ')
+                        //     ),
 
                         Forms\Components\Grid::make(2)->schema([
                             Forms\Components\TextInput::make('color')
@@ -249,11 +249,12 @@ class ProductVariantGenerateResource extends Resource
 
                 SelectFilter::make('supplier_id')
                     ->label('المورد')
-                    ->options(fn() => Cache::remember(
-                        'suppliers:options',
-                        3600,
-                        fn() => Supplier::orderBy('name')->pluck('name', 'id')->toArray()
-                    )),
+                    ->options(fn() => \App\Models\Supplier::query()
+                        ->select(['id', 'name'])
+                        ->orderBy('name')
+                        ->limit(100) // Limit للموردين عشان السرعة
+                        ->pluck('name', 'id')
+                        ->toArray()),
             ])
             ->actions([
                 Tables\Actions\Action::make('labels')
@@ -309,7 +310,7 @@ class ProductVariantGenerateResource extends Resource
         ]);
 
         return parent::getEloquentQuery()
-            ->with('supplier:id,name')
+            ->with('supplier:id,name') // Keep eager loading but only necessary columns
             ->select([
                 'id',
                 'name',
@@ -321,10 +322,10 @@ class ProductVariantGenerateResource extends Resource
                 'price',
                 'stock_qty',
                 'reorder_level',
+                'cost',
             ])
             ->orderByDesc('id');
     }
-
     public static function getRelations(): array
     {
         return [
