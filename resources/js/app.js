@@ -1,15 +1,21 @@
-// resources/js/app.js
+// // resources/js/app.js
 import './bootstrap'
-import { createApp, h } from 'vue'
-import { createInertiaApp } from '@inertiajs/vue3'
+import Alpine from 'alpinejs';
+window.Alpine = Alpine;
+Alpine.start();
 
-createInertiaApp({
-  resolve: name => {
-    return import(`./Pages/${name}.vue`)
-  },
-  setup({ el, App, props, plugin }) {
-    createApp({ render: () => h(App, props) })
-      .use(plugin)
-      .mount(el)
-  },
-})
+
+
+// import { createApp, h } from 'vue'
+// import { createInertiaApp } from '@inertiajs/vue3'
+
+// createInertiaApp({
+//   resolve: name => {
+//     return import(`./Pages/${name}.vue`)
+//   },
+//   setup({ el, App, props, plugin }) {
+//     createApp({ render: () => h(App, props) })
+//       .use(plugin)
+//       .mount(el)
+//   },
+// })

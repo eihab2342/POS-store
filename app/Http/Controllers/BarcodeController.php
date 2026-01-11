@@ -1,25 +1,27 @@
 <?php
 
-// app/Http/Controllers/BarcodeController.php
 namespace App\Http\Controllers;
+
 use App\Models\ProductVariant;
 use App\Services\BarcodeService;
-use PDF;
 
 class BarcodeController extends Controller
 {
-    public function print(ProductVariant $variant)
+    /**
+     * معاينة وطباعة الاستيكرات
+     */
+    public function preview(ProductVariant $variant)
     {
-        $type = request('type', 'code128');
+        // توليد/تحديث الباركودات
+        $barcodes = BarcodeService::syncToStock($variant);
+        dd($barcodes);
+        if ($barcodes->isEmpty()) {
+            return back()->with('error', 'لا يوجد مخزون لهذا المنتج!');
+        }
 
-        // هيكمل لحد المخزون لو فيه نقص ويرجع آخر اللي اتولد
-        $barcodes = BarcodeService::syncToStock($variant, $type);
-
-        $pdf = \PDF::loadView('pdf.labels', [
-            'pv' => $variant,
+        return view('barcodes.preview', [
+            'variant' => $variant,
             'barcodes' => $barcodes,
-        ])->setPaper('a4', 'portrait');
-
-        return $pdf->download('labels-' . ($variant->sku ?? 'variant-' . $variant->id) . '.pdf');
+        ]);
     }
 }

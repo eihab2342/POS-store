@@ -7,13 +7,15 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "filament/filament": "^3.2",
+        "blade-ui-kit/blade-heroicons": "^2.6",
         "genealabs/laravel-model-caching": "^12.0",
         "inertiajs/inertia-laravel": "^2.0",
+        "khaled.alshamaa/ar-php": "^7.0",
         "laravel/framework": "^12.0",
         "laravel/telescope": "^5.11",
         "laravel/tinker": "^2.10.1",
-        "livewire/livewire": "^3.6",
+        "mike42/escpos-php": "^4.0",
+        "milon/barcode": "^12.0",
         "predis/predis": "*"
     },
     "require-dev": {
@@ -31,7 +33,10 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "files": [
+        "app/Helpers/cache_helpers.php"
+    ]
     },
     "autoload-dev": {
         "psr-4": {

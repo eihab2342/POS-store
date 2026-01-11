@@ -2,23 +2,15 @@
 
 namespace App\Models;
 
-use GeneaLabs\LaravelModelCaching\Traits\Cachable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Schema;
 
 class Supplier extends Model
 {
-    use SoftDeletes, HasFactory, Cachable;
+    use HasFactory, SoftDeletes;
 
-    /**
-     * الأعمدة اللي ينفع نعمل لها mass assignment
-     */
-
-
-    //supplier model
     protected $fillable = [
         'code',
         'name',
@@ -29,61 +21,87 @@ class Supplier extends Model
         'country',
         'city',
         'address',
-        'opening_balance',
-        'current_balance',
+        'opening_balance',  // الرصيد الافتتاحي (إجمالي الفواتير)
+        'current_balance',  // الرصيد الحالي
         'is_active',
         'notes',
     ];
 
-    /**
-     * التحويل التلقائي للأنواع
-     */
     protected $casts = [
         'is_active' => 'boolean',
         'opening_balance' => 'decimal:2',
         'current_balance' => 'decimal:2',
     ];
 
-
+    // العلاقات
     public function products()
     {
         return $this->hasMany(Product::class);
     }
 
+    // أضف هذه الدالة في Supplier Model
+
     public function purchases()
     {
         return $this->hasMany(Purchase::class);
     }
+
     public function payments()
     {
         return $this->hasMany(SupplierPayment::class);
     }
+
+    /**
+     * إعادة حساب الرصيد الحالي
+     */
+    public function recalcCurrentBalance()
+    {
+        // إجمالي المشتريات (المبلغ المستحق)
+        $totalPurchases = $this->purchases()->sum('total_cost');
+
+        // إجمالي المدفوعات
+        $totalPayments = $this->payments()->sum('amount');
+
+        // الرصيد الحالي = المشتريات - المدفوعات
+        $this->update([
+            'current_balance' => $totalPurchases - $totalPayments,
+        ]);
+    }
+
+    /**
+     * إجمالي المشتريات
+     */
+    public function getTotalPurchasesAttribute()
+    {
+        return $this->purchases()->sum('total_cost');
+    }
+
+    /**
+     * إجمالي المدفوعات
+     */
+    public function getTotalPaidAttribute()
+    {
+        return $this->payments()->sum('amount');
+    }
+
+    /**
+     * المبلغ المتبقي
+     */
+    public function getRemainingBalanceAttribute()
+    {
+        return $this->current_balance;
+    }
+
     protected static function booted()
     {
-        static::saved(fn() => Cache::tags('suppliers')->flush());
-        static::deleted(fn() => Cache::tags('suppliers')->flush());
-    }
+        static::saved(function () {
+            Cache::forget('suppliers');
+            Cache::forget('suppliers:options');
+        });
 
-    // App\Models\Supplier.php
-
-    public function purchaseInvoices()
-    {
-        return $this->hasMany(Purchase::class);
-    }
-
-    public function recalcCurrentBalance(): void
-    {
-        $purchases = $this->purchaseInvoices()->when(
-            Schema::hasColumn('purchase_invoices', 'status'),
-            fn($q) => $q->where('status', 'posted')
-        )->sum('total');
-
-        $payments = $this->payments()->sum('amount');
-        $returns = method_exists($this, 'purchaseReturns')
-            ? $this->purchaseReturns()->sum('total') : 0;
-
-        $this->updateQuietly([
-            'current_balance' => ($this->opening_balance + $purchases - $payments - $returns),
-        ]);
+        static::deleted(function () {
+            Cache::forget('suppliers');
+            Cache::forget('suppliers:options');
+        });
     }
 }

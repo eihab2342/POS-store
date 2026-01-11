@@ -1,11 +1,33 @@
-@import 'tailwindcss';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+/* تخصيص SweetAlert2 */
+.swal2-popup {
+    font-family: 'Tajawal', sans-serif !important;
+}
+
+.swal2-title {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+}
+
+.swal2-confirm {
+    padding: 0.5rem 1.5rem !important;
+}
+
+.swal2-cancel {
+    padding: 0.5rem 1.5rem !important;
+}
+
+/* تخصيص Toast */
+.swal2-toast {
+    font-family: 'Tajawal', sans-serif !important;
+    text-align: right !important;
+}
+
+.swal2-toast .swal2-title {
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
 }
